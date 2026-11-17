@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduCore REST — Plataforma de Gestión Académica &amp; API HATEOAS</title>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            background: radial-gradient(circle at top left, #eef2ff 0%, #f8fafc 45%, #f1f5f9 100%);
+            color: #0f172a;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .glass-header {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 55%, #1e293b 100%);
+        }
+        .card-pro {
+            background: #ffffff;
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .card-pro:hover {
+            box-shadow: 0 10px 28px -4px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.04);
+        }
+        .swagger-get {
+            border-left: 4px solid #3b82f6;
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.06) 0%, rgba(255, 255, 255, 0.9) 100%);
+        }
+        .swagger-post {
+            border-left: 4px solid #10b981;
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.06) 0%, rgba(255, 255, 255, 0.9) 100%);
+        }
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.2); border-radius: 8px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.4); border-radius: 8px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white">
+
+    <!-- Barra Superior Ejecutiva -->
+    <header class="glass-header text-white sticky top-0 z-40 shadow-lg border-b border-indigo-500/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-md shadow-indigo-950/50 border border-indigo-400/30">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-extrabold text-base sm:text-lg tracking-tight text-white">EduCore Academic Portal</h1>
+                        <span class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            REST API v1.0 Online
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-300">Sistema de Gestión de Estudiantes • Arquitectura HATEOAS, OpenAPI 3.0 &amp; Reportes PDF</p>
+                </div>
+            </div>
+
+            <!-- Navegación Principal por Módulos -->
+            <nav class="flex flex-wrap gap-1.5 bg-slate-900/80 p-1.5 rounded-xl border border-slate-700/80 backdrop-blur">
+                <button id="tabBtnFrontend" onclick="cambiarVista('frontend')" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-indigo-600 text-white shadow-sm transition">
+                    1. Frontend + HATEOAS
+                </button>
+                <button id="tabBtnSwagger" onclick="cambiarVista('swagger')" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800/70 transition">
+                    2. Swagger / OpenAPI
+                </button>
+                <button id="tabBtnPdf" onclick="cambiarVista('pdf')" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800/70 transition">
+                    3. Reporte PDF
+                </button>
+                <button id="tabBtnCodigo" onclick="cambiarVista('codigo')" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800/70 transition">
+                    4. Código Javadoc + Correo
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Notificación Toast Flotante -->
+    <div id="toastBanner" class="hidden fixed bottom-5 right-5 z-50 max-w-md bg-slate-900/95 backdrop-blur text-white px-4 py-3.5 rounded-xl shadow-2xl border border-indigo-500/40 flex items-center gap-3">
+        <span id="toastIcon" class="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span>
+        <p id="toastText" class="text-xs sm:text-sm font-medium leading-snug"></p>
+    </div>
+
+    <!-- Contenedor Principal -->
+    <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 flex-1 space-y-6">
+
+        <!-- Barra de Indicadores Académicos en Tiempo Real -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="card-pro rounded-2xl p-4 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Matrícula Total</p>
+                    <p id="kpiTotalEstudiantes" class="text-2xl font-extrabold text-slate-900 mt-0.5">5</p>
+                    <p class="text-[11px] text-emerald-600 font-medium mt-0.5">Base de datos sincronizada</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm mono">
+                    DB
+                </div>
+            </div>
+
+            <div class="card-pro rounded-2xl p-4 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Promedio Institucional</p>
+                    <p id="kpiPromedioGeneral" class="text-2xl font-extrabold text-indigo-600 mt-0.5">4.38</p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Escala calificativa 0.0 – 5.0</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm mono">
+                    AVG
+                </div>
+            </div>
+
+            <div class="card-pro rounded-2xl p-4 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Estándar Hipermedia</p>
+                    <p class="text-lg font-extrabold text-slate-900 mt-1">HAL + HATEOAS</p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Enlaces dinámicos `_links`</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center font-bold text-xs mono">
+                    L3
+                </div>
+            </div>
+
+            <div class="card-pro rounded-2xl p-4 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Documentación API</p>
+                    <p class="text-lg font-extrabold text-slate-900 mt-1">OpenAPI 3.0.1</p>
+                    <p class="text-[11px] text-indigo-600 font-medium mt-0.5">Swagger UI + Javadoc</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-xs mono">
+                    OAS
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- VISTA 1: PANEL FRONTEND + CONSOLA HATEOAS                 -->
+        <!-- ========================================================= -->
+        <section id="vistaFrontend" class="space-y-6">
+
+            <!-- Acciones Rápidas de los 4 Endpoints -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="card-pro rounded-2xl p-4 flex flex-col justify-between border-t-4 border-t-blue-600">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-blue-50 text-blue-700 mono border border-blue-200">GET /api/estudiantes</span>
+                            <span class="text-[11px] font-semibold text-slate-400">#01</span>
+                        </div>
+                        <h2 class="font-bold text-sm mt-2.5 text-slate-900">Consulta General</h2>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Recupera la colección completa de estudiantes con enlaces HATEOAS.</p>
+                    </div>
+                    <button onclick="ejecutarEndpointListar()" class="mt-4 w-full py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition shadow-sm">
+                        Ejecutar Endpoint 1
+                    </button>
+                </div>
+
+                <div class="card-pro rounded-2xl p-4 flex flex-col justify-between border-t-4 border-t-indigo-600">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-indigo-50 text-indigo-700 mono border border-indigo-200">GET /api/estudiantes/{id}</span>
+                            <span class="text-[11px] font-semibold text-slate-400">#02</span>
+                        </div>
+                        <h2 class="font-bold text-sm mt-2.5 text-slate-900">Búsqueda por Identificación</h2>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Consulta el expediente individual por número de documento único.</p>
+                    </div>
+                    <button onclick="focarBusquedaId()" class="mt-4 w-full py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold transition shadow-sm">
+                        Probar Búsqueda por ID
+                    </button>
+                </div>
+
+                <div class="card-pro rounded-2xl p-4 flex flex-col justify-between border-t-4 border-t-emerald-600">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-emerald-50 text-emerald-700 mono border border-emerald-200">POST /api/estudiantes</span>
+                            <span class="text-[11px] font-semibold text-slate-400">#03</span>
+                        </div>
+                        <h2 class="font-bold text-sm mt-2.5 text-slate-900">Registro de Estudiantes</h2>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Inserta un nuevo estudiante validando unicidad y retorna `201 Created`.</p>
+                    </div>
+                    <button onclick="cargarEjemploFormulario()" class="mt-4 w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition shadow-sm">
+                        Autocompletar Ejemplo
+                    </button>
+                </div>
+
+                <div class="card-pro rounded-2xl p-4 flex flex-col justify-between border-t-4 border-t-amber-500">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-amber-50 text-amber-800 mono border border-amber-200">GET /reporte/pdf</span>
+                            <span class="text-[11px] font-semibold text-slate-400">#04</span>
+                        </div>
+                        <h2 class="font-bold text-sm mt-2.5 text-slate-900">Exportación a PDF</h2>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Genera un documento PDF formal con el consolidado académico.</p>
+                    </div>
+                    <button onclick="descargarReportePdf()" class="mt-4 w-full py-2 px-3 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-bold transition shadow-sm">
+                        Descargar PDF Ahora
+                    </button>
+                </div>
+            </div>
+
+            <!-- Área Operativa Principal -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- Columna Izquierda: Formularios de Operación (Endpoints 2 y 3) -->
+                <div class="lg:col-span-4 space-y-5">
+
+                    <!-- Endpoint 2: Búsqueda por Documento -->
+                    <div class="card-pro rounded-2xl p-5">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
+                                <h3 class="font-bold text-sm text-slate-900">Consultar por Identificación</h3>
+                            </div>
+                            <span class="text-[11px] mono bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-md font-semibold">Endpoint 2</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-3">
+                            Ingresa un documento registrado (ej. <button type="button" onclick="ejecutarEndpointPorIdentificacion('1036684210')" class="mono font-semibold text-indigo-600 hover:underline">1036684210</button> o <button type="button" onclick="ejecutarEndpointPorIdentificacion('1035448901')" class="mono font-semibold text-indigo-600 hover:underline">1035448901</button>):
+                        </p>
+                        <div class="flex gap-2">
+                            <input id="inputBuscarIdentificacion" type="text" placeholder="Número de documento..."
+                                   class="flex-1 rounded-xl border border-slate-300 bg-slate-50/60 px-3.5 py-2 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition">
+                            <button onclick="ejecutarEndpointPorIdentificacion()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold transition shadow-sm">
+                                Consultar
+                            </button>
+                        </div>
+                        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                            <button onclick="ejecutarEndpointListar()" class="text-indigo-600 hover:text-indigo-800 font-semibold transition">
+                                Mostrar todos los estudiantes
+                            </button>
+                            <span class="text-slate-400 mono text-[11px]">EntityModel&lt;Estudiante&gt;</span>
+                        </div>
+                    </div>
+
+                    <!-- Endpoint 3: Formulario de Matrícula -->
+                    <div class="card-pro rounded-2xl p-5">
+                        <div class="flex items-center justify-between mb-3.5">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                                <h3 class="font-bold text-sm text-slate-900">Registrar Nuevo Estudiante</h3>
+                            </div>
+                            <span class="text-[11px] mono bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md font-semibold">Endpoint 3</span>
+                        </div>
+
+                        <form id="formNuevoEstudiante" onsubmit="ejecutarEndpointCrear(event)" class="space-y-3.5">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Documento de Identificación *</label>
+                                <input id="campoIdentificacion" type="text" required placeholder="Ej: 1039451820"
+                                       class="w-full rounded-xl border border-slate-300 bg-slate-50/60 px-3.5 py-2 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition">
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nombres *</label>
+                                    <input id="campoNombres" type="text" required placeholder="Ej: Santiago"
+                                           class="w-full rounded-xl border border-slate-300 bg-slate-50/60 px-3 py-2 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Apellidos *</label>
+                                    <input id="campoApellidos" type="text" required placeholder="Ej: Arboleda Cano"
+                                           class="w-full rounded-xl border border-slate-300 bg-slate-50/60 px-3 py-2 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Grado Escolar *</label>
+                                    <select id="campoGrado" class="w-full rounded-xl border border-slate-300 bg-slate-50/60 px-3 py-2 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition">
+                                        <option value="9-A">Grado 9-A</option>
+                                        <option value="9-B">Grado 9-B</option>
+                                        <option value="10-A">Grado 10-A</option>
+                                        <option value="10-B">Grado 10-B</option>
+                                        <option value="11-A" selected>Grado 11-A</option>
+                                        <option value="11-B">Grado 11-B</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Promedio (0.0 - 5.0) *</label>
+                                    <input id="campoPromedio" type="number" step="0.1" min="0" max="5" required placeholder="4.5"
+                                           class="w-full rounded-xl border border-slate-300 bg-slate-50/60 px-3 py-2 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Correo Institucional *</label>
+                                <input id="campoCorreo" type="email" required placeholder="estudiante@colegio.edu.co"
+                                       class="w-full rounded-xl border border-slate-300 bg-slate-50/60 px-3.5 py-2 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition">
+                            </div>
+
+                            <div class="pt-1 flex gap-2">
+                                <button type="submit" class="flex-1 py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-semibold rounded-xl text-xs sm:text-sm shadow-md shadow-indigo-500/20 transition">
+                                    Registrar en Base de Datos (POST)
+                                </button>
+                                <button type="button" onclick="cargarEjemploFormulario()" title="Autocompletar datos"
+                                        class="px-3 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-semibold transition">
+                                    Auto
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Tabla de Base de Datos + Inspector HATEOAS -->
+                <div class="lg:col-span-8 space-y-5">
+
+                    <!-- Tabla de Estudiantes -->
+                    <div class="card-pro rounded-2xl p-5">
+                        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-bold text-base text-slate-900">Directorio Académico de Estudiantes</h3>
+                                    <span id="badgeConteo" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">5 estudiantes</span>
+                                </div>
+                                <p id="subtituloTabla" class="text-xs text-slate-500 mt-0.5">Sincronizado con GET /api/estudiantes (HATEOAS CollectionModel)</p>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-2">
+                                <select id="filtroGradoTabla" onchange="filtrarPorGradoTabla(this.value)" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                                    <option value="TODOS">Todos los grados</option>
+                                    <option value="11-A">Grado 11-A</option>
+                                    <option value="11-B">Grado 11-B</option>
+                                    <option value="10-A">Grado 10-A</option>
+                                    <option value="10-B">Grado 10-B</option>
+                                    <option value="9-C">Grado 9-C</option>
+                                </select>
+                                <button onclick="descargarReportePdf()" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 transition shadow-sm">
+                                    Exportar PDF
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto rounded-xl border border-slate-200/80">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500 bg-slate-50/90">
+                                        <th class="py-3 px-3.5">Identificación</th>
+                                        <th class="py-3 px-3.5">Estudiante</th>
+                                        <th class="py-3 px-3.5">Grado</th>
+                                        <th class="py-3 px-3.5">Correo Institucional</th>
+                                        <th class="py-3 px-3.5 text-right">Promedio</th>
+                                        <th class="py-3 px-3.5 text-center">Recurso HATEOAS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cuerpoTablaEstudiantes" class="divide-y divide-slate-200/70 text-xs sm:text-sm bg-white">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Inspector de Respuesta REST + HATEOAS -->
+                    <div class="bg-slate-950 text-slate-100 rounded-2xl p-5 shadow-xl border border-slate-800">
+                        <div class="flex flex-wrap items-center justify-between gap-2 pb-3.5 border-b border-slate-800">
+                            <div class="flex items-center gap-2.5">
+                                <span class="flex gap-1.5 mr-1">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                                    <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                                </span>
+                                <span id="badgeMetodoHttp" class="px-2.5 py-0.5 rounded-md text-xs font-bold bg-blue-600 text-white mono">GET</span>
+                                <span id="rutaEndpointActual" class="mono text-xs sm:text-sm text-indigo-300 font-medium">http://localhost:8080/api/estudiantes</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span id="badgeCodigoHttp" class="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 mono">200 OK</span>
+                                <button onclick="copiarRespuestaJson()" class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition">
+                                    Copiar JSON
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-between gap-2 mt-2.5 mb-2 text-[11px] text-slate-400">
+                            <span>Payload hipermedia <span class="mono text-amber-300">application/hal+json</span> con navegación autodescriptiva <span class="mono text-indigo-300">_links</span>:</span>
+                            <span class="mono text-slate-500">RepresentationModelAssembler</span>
+                        </div>
+
+                        <pre id="visorJsonHateoas" class="mono text-xs text-emerald-300 overflow-x-auto max-h-72 p-4 bg-slate-900/90 rounded-xl border border-slate-800/90 leading-relaxed custom-scroll"></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- VISTA 2: DOCUMENTACIÓN INTERACTIVA SWAGGER / OPENAPI 3.0  -->
+        <!-- ========================================================= -->
+        <section id="vistaSwagger" class="hidden space-y-5">
+            <div class="card-pro rounded-2xl p-6">
+                <div class="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2.5">
+                            <h2 class="text-xl font-extrabold text-slate-900">API REST de Gestión Escolar — OpenAPI 3.0</h2>
+                            <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-slate-100 text-slate-700 border border-slate-300 mono">v1.0.0</span>
+                            <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-600 text-white mono">OAS 3.0</span>
+                        </div>
+                        <p class="text-xs mono text-indigo-600 mt-1">Especificación JSON: http://localhost:8080/v3/api-docs</p>
+                        <p class="text-sm text-slate-600 mt-2 max-w-3xl leading-relaxed">
+                            Documentación interactiva generada con SpringDoc OpenAPI. Expone los cuatro endpoints transaccionales de estudiantes bajo el estándar HATEOAS, incluyendo esquemas de validación y exportación documental en PDF.
+                        </p>
+                    </div>
+                    <div class="text-xs text-slate-600 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                        <p class="font-bold text-slate-800">Especificación Técnica</p>
+                        <p class="mt-0.5">Spring Boot 3.2.5 + Spring HATEOAS</p>
+                        <p class="mono text-indigo-600 mt-0.5">Media Type: application/hal+json</p>
+                    </div>
+                </div>
+
+                <!-- Operaciones del Controlador -->
+                <div class="mt-6 space-y-3.5">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-xs uppercase tracking-wider text-slate-500">Controlador: EstudianteController (`/api/estudiantes`)</h3>
+                        <span class="text-xs text-slate-400">4 operaciones disponibles</span>
+                    </div>
+
+                    <!-- Operación 1 -->
+                    <div class="border border-slate-200 rounded-xl p-4 swagger-get">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex flex-wrap items-center gap-3">
+                                <span class="px-3 py-1 rounded-lg bg-blue-600 text-white font-bold text-xs mono shadow-sm">GET</span>
+                                <span class="mono font-bold text-sm text-slate-900">/api/estudiantes</span>
+                                <span class="text-xs text-slate-600">1. Consulta general de los estudiantes registrados (CollectionModel HATEOAS)</span>
+                            </div>
+                            <button onclick="probarDesdeSwagger('listar')" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition shadow-sm">
+                                Try it out &amp; Execute
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Operación 2 -->
+                    <div class="border border-slate-200 rounded-xl p-4 swagger-get">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex flex-wrap items-center gap-3">
+                                <span class="px-3 py-1 rounded-lg bg-blue-600 text-white font-bold text-xs mono shadow-sm">GET</span>
+                                <span class="mono font-bold text-sm text-slate-900">/api/estudiantes/{identificacion}</span>
+                                <span class="text-xs text-slate-600">2. Consultar información de un estudiante por su número de identificación</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input id="swaggerInputId" type="text" value="1036684210" placeholder="Identificación"
+                                       class="border border-blue-300 rounded-lg px-2.5 py-1 text-xs mono w-32 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <button onclick="probarDesdeSwagger('porId')" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition shadow-sm">
+                                    Execute
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Operación 3 -->
+                    <div class="border border-slate-200 rounded-xl p-4 swagger-post">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex flex-wrap items-center gap-3">
+                                <span class="px-3 py-1 rounded-lg bg-emerald-600 text-white font-bold text-xs mono shadow-sm">POST</span>
+                                <span class="mono font-bold text-sm text-slate-900">/api/estudiantes</span>
+                                <span class="text-xs text-slate-600">3. Ingresar nuevos estudiantes a la base de datos (Retorna 201 Created + Location)</span>
+                            </div>
+                            <button onclick="cambiarVista('frontend'); cargarEjemploFormulario();" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition shadow-sm">
+                                Probar POST en Formulario
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Operación 4 -->
+                    <div class="border border-slate-200 rounded-xl p-4 swagger-get">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex flex-wrap items-center gap-3">
+                                <span class="px-3 py-1 rounded-lg bg-blue-600 text-white font-bold text-xs mono shadow-sm">GET</span>
+                                <span class="mono font-bold text-sm text-slate-900">/api/estudiantes/reporte/pdf</span>
+                                <span class="text-xs text-slate-600">4. Exportar reportes básicos en formato PDF (`application/pdf`)</span>
+                            </div>
+                            <button onclick="descargarReportePdf()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition shadow-sm">
+                                Execute &amp; Download PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Esquema de Entidad OpenAPI y Consola de Respuesta -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-6">
+                    <div class="lg:col-span-5 bg-slate-50 rounded-xl p-4 border border-slate-200">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2.5">Schema: Estudiante (JPA Entity)</h4>
+                        <pre class="mono text-xs text-slate-700 overflow-x-auto leading-relaxed">{
+  "identificacion": "string (unique, required)",
+  "nombres": "string (required)",
+  "apellidos": "string (required)",
+  "grado": "string (required, ej: 11-A)",
+  "correo": "string (email format)",
+  "promedio": "number (double, 0.0 - 5.0)",
+  "fechaMatricula": "string ($date)"
+}</pre>
+                    </div>
+
+                    <div class="lg:col-span-7 bg-slate-950 text-slate-100 rounded-xl p-4 border border-slate-800">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-indigo-300 mono">Server Response Body (`application/hal+json`)</span>
+                            <span id="swaggerStatus" class="text-xs mono text-emerald-400 font-semibold">HTTP 200 OK</span>
+                        </div>
+                        <pre id="swaggerOutputJson" class="mono text-xs text-emerald-300 overflow-x-auto max-h-60 p-3 bg-slate-900 rounded-lg custom-scroll"></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- VISTA 3: VISTA PREVIA EJECUTIVA Y EXPORTACIÓN REPORTE PDF -->
+        <!-- ========================================================= -->
+        <section id="vistaPdf" class="hidden space-y-5">
+            <div class="card-pro rounded-2xl p-6">
+                <div class="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-slate-200">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 mono">Endpoint 4 • GET /api/estudiantes/reporte/pdf</span>
+                        <h2 class="text-lg font-extrabold text-slate-900 mt-0.5">Generador y Vista Previa del Reporte Oficial en PDF</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">El documento incluye todos los estudiantes actuales en la base de datos junto con el cálculo del promedio general.</p>
+                    </div>
+                    <button onclick="descargarReportePdf()" class="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md shadow-indigo-500/20 transition">
+                        Descargar Archivo PDF (reporte_estudiantes_colegio.pdf)
+                    </button>
+                </div>
+
+                <!-- Simulación de Hoja A4 de Impresión -->
+                <div class="mt-6 max-w-4xl mx-auto bg-white border border-slate-300 rounded-xl p-6 sm:p-10 shadow-lg">
+                    <div class="border-b-2 border-slate-900 pb-4 mb-5 flex flex-wrap justify-between items-end gap-3">
+                        <div>
+                            <p class="text-[11px] font-bold uppercase tracking-widest text-indigo-600">Sistema de Gestión Académica Escolar</p>
+                            <h3 class="text-base sm:text-xl font-extrabold text-slate-900 mt-0.5">REPORTE CONSOLIDADO DE ESTUDIANTES MATRICULADOS</h3>
+                        </div>
+                        <div class="text-right">
+                            <span class="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[11px] mono font-semibold">Formato FO-ACAD-01</span>
+                            <p id="fechaReporteVista" class="text-xs mono text-slate-500 mt-1"></p>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border border-slate-300 text-xs sm:text-sm">
+                            <thead class="bg-slate-900 text-white">
+                                <tr>
+                                    <th class="p-2.5 border border-slate-800">Identificación</th>
+                                    <th class="p-2.5 border border-slate-800">Nombre Completo</th>
+                                    <th class="p-2.5 border border-slate-800">Grado</th>
+                                    <th class="p-2.5 border border-slate-800">Correo Institucional</th>
+                                    <th class="p-2.5 border border-slate-800 text-right">Promedio</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaPreviewPdf" class="divide-y divide-slate-200"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-5 pt-4 border-t border-slate-200 flex flex-wrap justify-between items-center text-xs font-bold text-slate-800 bg-slate-50 px-4 py-3 rounded-lg">
+                        <span id="resumenTotalPdf">Total de estudiantes registrados: 5</span>
+                        <span id="resumenPromedioPdf" class="text-indigo-700">Promedio general del colegio: 4.38</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- VISTA 4: CÓDIGO JAVA DOCUMENTADO (JAVADOC) + CORREO       -->
+        <!-- ========================================================= -->
+        <section id="vistaCodigo" class="hidden space-y-6">
+
+            <!-- Plantilla de Correo Limpia y Profesional -->
+            <div class="card-pro rounded-2xl p-6">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">Plantilla de Entrega</span>
+                        <h2 class="font-bold text-base text-slate-900 mt-0.5">Mensaje Redactado para Enviar al Docente</h2>
+                        <p class="text-xs text-slate-500">Redacción natural y formal, sin nombres de instituciones predefinidos, lista para enviar con el repositorio y las capturas.</p>
+                    </div>
+                    <button onclick="copiarCorreoProfesor()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold transition shadow-sm">
+                        Copiar Correo
+                    </button>
+                </div>
+                <pre id="textoCorreoProfesor" class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap font-sans leading-relaxed">Asunto: Entrega Evaluación Parcial Parte B - Aplicación API REST de Estudiantes
+
+Cordial saludo, profesor.
+
+Espero que se encuentre muy bien. Por medio de este correo adjunto la entrega correspondiente al ejercicio práctico de la Parte B del parcial (aplicación con API REST conectada a base de datos para la gestión de estudiantes de un colegio).
+
+El proyecto implementa los cuatro endpoints solicitados:
+1. Consulta general de los estudiantes (GET /api/estudiantes).
+2. Consulta individual de un estudiante por su número de identificación (GET /api/estudiantes/{identificacion}).
+3. Ingreso de nuevos estudiantes a la base de datos (POST /api/estudiantes).
+4. Exportación de reportes básicos en formato PDF (GET /api/estudiantes/reporte/pdf).
+
+Asimismo, las respuestas del API aplican el principio HATEOAS (mediante EntityModel y CollectionModel), cuenta con documentación interactiva en OpenAPI / Swagger UI (/swagger-ui.html), todo el código fuente está documentado con Javadoc y se encuentra integrado con su respectivo Frontend web.
+
+- Enlace al repositorio de código: [Pegar aquí el enlace del repositorio o adjuntar el archivo ZIP]
+- Adjunto en este correo las capturas de pantalla con las evidencias de funcionamiento de los endpoints, las respuestas con enlaces HATEOAS, la documentación en Swagger, el reporte PDF exportado y la interfaz Frontend.
+
+Quedo atento a cualquier comentario. Muchas gracias por su tiempo.
+
+Atentamente,
+[Tu Nombre Completo]</pre>
+            </div>
+
+            <!-- Visor del Código Fuente con Javadoc -->
+            <div class="card-pro rounded-2xl p-6">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <div>
+                        <h3 class="font-bold text-base text-slate-900">Código Fuente Backend (Java 17 + Spring Boot 3 + Javadoc)</h3>
+                        <p class="text-xs text-slate-500">Explora las clases principales del proyecto documentadas con Javadoc:</p>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button onclick="mostrarArchivoCodigo('controller')" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium mono transition">EstudianteController.java</button>
+                        <button onclick="mostrarArchivoCodigo('hateoas')" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-medium mono transition">EstudianteModelAssembler.java</button>
+                        <button onclick="mostrarArchivoCodigo('service')" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-medium mono transition">EstudianteService.java</button>
+                        <button onclick="mostrarArchivoCodigo('pdf')" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-medium mono transition">ReportePdfService.java</button>
+                        <button onclick="mostrarArchivoCodigo('entity')" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-medium mono transition">Estudiante.java</button>
+                    </div>
+                </div>
+                <pre id="visorCodigoJava" class="mono text-xs bg-slate-950 text-emerald-300 p-4 rounded-xl overflow-x-auto max-h-96 leading-relaxed border border-slate-800 custom-scroll"></pre>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Base de datos inicial en memoria
+        const baseDatosEstudiantes = [
+            {
+                id: 1,
+                identificacion: "1036684210",
+                nombres: "Valeria",
+                apellidos: "Gómez Restrepo",
+                grado: "11-A",
+                correo: "valeria.gomez@colegio.edu.co",
+                promedio: 4.6,
+                fechaMatricula: "2026-01-22"
+            },
+            {
+                id: 2,
+                identificacion: "1037912450",
+                nombres: "Mateo",
+                apellidos: "Cardona Vélez",
+                grado: "10-B",
+                correo: "mateo.cardona@colegio.edu.co",
+                promedio: 4.2,
+                fechaMatricula: "2026-01-25"
+            },
+            {
+                id: 3,
+                identificacion: "1035448901",
+                nombres: "Salomé",
+                apellidos: "Ospina Arango",
+                grado: "11-A",
+                correo: "salome.ospina@colegio.edu.co",
+                promedio: 4.8,
+                fechaMatricula: "2026-01-28"
+            },
+            {
+                id: 4,
+                identificacion: "1038105329",
+                nombres: "Juan José",
+                apellidos: "Montoya Ríos",
+                grado: "9-C",
+                correo: "juan.montoya@colegio.edu.co",
+                promedio: 3.9,
+                fechaMatricula: "2026-02-02"
+            },
+            {
+                id: 5,
+                identificacion: "1036220194",
+                nombres: "Camila",
+                apellidos: "Betancur Londoño",
+                grado: "10-A",
+                correo: "camila.betancur@colegio.edu.co",
+                promedio: 4.4,
+                fechaMatricula: "2026-02-05"
+            }
+        ];
+
+        // Ensamblador HATEOAS en cliente
+        function ensamblarEntityModel(est) {
+            return {
+                id: est.id,
+                identificacion: est.identificacion,
+                nombres: est.nombres,
+                apellidos: est.apellidos,
+                grado: est.grado,
+                correo: est.correo,
+                promedio: est.promedio,
+                fechaMatricula: est.fechaMatricula,
+                _links: {
+                    self: {
+                        href: "http://localhost:8080/api/estudiantes/" + est.identificacion
+                    },
+                    estudiantes: {
+                        href: "http://localhost:8080/api/estudiantes"
+                    },
+                    "reporte-pdf": {
+                        href: "http://localhost:8080/api/estudiantes/reporte/pdf"
+                    }
+                }
+            };
+        }
+
+        function ensamblarCollectionModel(lista) {
+            return {
+                _embedded: {
+                    estudianteList: lista.map(ensamblarEntityModel)
+                },
+                _links: {
+                    self: {
+                        href: "http://localhost:8080/api/estudiantes"
+                    },
+                    "exportar-reporte-pdf": {
+                        href: "http://localhost:8080/api/estudiantes/reporte/pdf"
+                    }
+                }
+            };
+        }
+
+        function actualizarKpisSuperiores() {
+            const total = baseDatosEstudiantes.length;
+            const suma = baseDatosEstudiantes.reduce((acc, item) => acc + Number(item.promedio || 0), 0);
+            const prom = total > 0 ? (suma / total).toFixed(2) : "0.00";
+            const elTotal = document.getElementById("kpiTotalEstudiantes");
+            const elProm = document.getElementById("kpiPromedioGeneral");
+            if (elTotal) elTotal.textContent = String(total);
+            if (elProm) elProm.textContent = prom;
+        }
+
+        function mostrarNotificacion(mensaje, esError) {
+            const banner = document.getElementById("toastBanner");
+            const texto = document.getElementById("toastText");
+            const icono = document.getElementById("toastIcon");
+            texto.textContent = mensaje;
+            icono.className = esError
+                ? "w-2.5 h-2.5 rounded-full bg-rose-400 shrink-0"
+                : "w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0";
+            banner.classList.remove("hidden");
+            clearTimeout(window.toastTimer);
+            window.toastTimer = setTimeout(() => {
+                banner.classList.add("hidden");
+            }, 3500);
+        }
+
+        function actualizarVisorHttp(metodo, ruta, codigoTexto, objetoJson) {
+            const badgeMetodo = document.getElementById("badgeMetodoHttp");
+            badgeMetodo.textContent = metodo;
+            badgeMetodo.className = metodo === "POST"
+                ? "px-2.5 py-0.5 rounded-md text-xs font-bold bg-emerald-600 text-white mono"
+                : "px-2.5 py-0.5 rounded-md text-xs font-bold bg-blue-600 text-white mono";
+
+            document.getElementById("rutaEndpointActual").textContent = "http://localhost:8080" + ruta;
+            document.getElementById("badgeCodigoHttp").textContent = codigoTexto;
+            const textoFormateado = JSON.stringify(objetoJson, null, 2);
+            document.getElementById("visorJsonHateoas").textContent = textoFormateado;
+            document.getElementById("swaggerOutputJson").textContent = textoFormateado;
+            document.getElementById("swaggerStatus").textContent = "HTTP " + codigoTexto;
+        }
+
+        // ENDPOINT 1: Consulta general de los estudiantes
+        function ejecutarEndpointListar() {
+            const selectorGrado = document.getElementById("filtroGradoTabla");
+            if (selectorGrado) selectorGrado.value = "TODOS";
+            const respuestaHateoas = ensamblarCollectionModel(baseDatosEstudiantes);
+            renderizarTablaFrontend(baseDatosEstudiantes);
+            document.getElementById("subtituloTabla").textContent =
+                "Sincronizado con GET /api/estudiantes (HATEOAS CollectionModel)";
+            actualizarVisorHttp("GET", "/api/estudiantes", "200 OK", respuestaHateoas);
+            actualizarVistaPreviaPdf();
+            actualizarKpisSuperiores();
+        }
+
+        function filtrarPorGradoTabla(gradoSeleccionado) {
+            if (!gradoSeleccionado || gradoSeleccionado === "TODOS") {
+                ejecutarEndpointListar();
+                return;
+            }
+            const filtrados = baseDatosEstudiantes.filter(e => e.grado === gradoSeleccionado);
+            renderizarTablaFrontend(filtrados);
+            document.getElementById("subtituloTabla").textContent =
+                "Filtrando vista por grado " + gradoSeleccionado + " (" + filtrados.length + " registro(s))";
+        }
+
+        // ENDPOINT 2: Consultar estudiante por número de identificación
+        function ejecutarEndpointPorIdentificacion(idOpcional) {
+            const input = document.getElementById("inputBuscarIdentificacion");
+            const idBuscado = (idOpcional || input.value || "").trim();
+            if (!idBuscado) {
+                mostrarNotificacion("Ingresa un número de identificación para realizar la consulta.", true);
+                return;
+            }
+            input.value = idBuscado;
+
+            const encontrado = baseDatosEstudiantes.find(e => e.identificacion === idBuscado);
+            if (encontrado) {
+                const recurso = ensamblarEntityModel(encontrado);
+                renderizarTablaFrontend([encontrado]);
+                document.getElementById("subtituloTabla").textContent =
+                    "Resultado individual devuelto por GET /api/estudiantes/" + idBuscado;
+                actualizarVisorHttp("GET", "/api/estudiantes/" + idBuscado, "200 OK", recurso);
+                mostrarNotificacion("Estudiante " + encontrado.nombres + " " + encontrado.apellidos + " localizado (200 OK).", false);
+            } else {
+                const error404 = {
+                    mensaje: "No se encontró ningún estudiante con la identificación: " + idBuscado,
+                    estado: 404
+                };
+                renderizarTablaFrontend([]);
+                document.getElementById("subtituloTabla").textContent =
+                    "Sin coincidencias para la identificación: " + idBuscado;
+                actualizarVisorHttp("GET", "/api/estudiantes/" + idBuscado, "404 NOT FOUND", error404);
+                mostrarNotificacion("No existe un estudiante con identificación " + idBuscado + " (404).", true);
+            }
+        }
+
+        // ENDPOINT 3: Ingresar nuevos estudiantes a la base de datos
+        function ejecutarEndpointCrear(evento) {
+            evento.preventDefault();
+            const identificacion = document.getElementById("campoIdentificacion").value.trim();
+            const nombres = document.getElementById("campoNombres").value.trim();
+            const apellidos = document.getElementById("campoApellidos").value.trim();
+            const grado = document.getElementById("campoGrado").value.trim();
+            const promedio = parseFloat(document.getElementById("campoPromedio").value);
+            const correo = document.getElementById("campoCorreo").value.trim();
+
+            if (baseDatosEstudiantes.some(e => e.identificacion === identificacion)) {
+                const errorDuplicado = {
+                    mensaje: "Ya se encuentra registrado un estudiante con la identificación: " + identificacion,
+                    estado: 400
+                };
+                actualizarVisorHttp("POST", "/api/estudiantes", "400 BAD REQUEST", errorDuplicado);
+                mostrarNotificacion("Ese número de identificación ya se encuentra registrado.", true);
+                return;
+            }
+
+            const hoy = new Date().toISOString().slice(0, 10);
+            const nuevoEstudiante = {
+                id: baseDatosEstudiantes.length + 1,
+                identificacion,
+                nombres,
+                apellidos,
+                grado,
+                correo,
+                promedio: isNaN(promedio) ? 4.0 : promedio,
+                fechaMatricula: hoy
+            };
+
+            baseDatosEstudiantes.push(nuevoEstudiante);
+            const recursoCreado = ensamblarEntityModel(nuevoEstudiante);
+
+            renderizarTablaFrontend(baseDatosEstudiantes);
+            document.getElementById("subtituloTabla").textContent =
+                "Nuevo registro insertado mediante POST /api/estudiantes (201 Created)";
+            actualizarVisorHttp("POST", "/api/estudiantes", "201 CREATED", recursoCreado);
+            actualizarVistaPreviaPdf();
+            actualizarKpisSuperiores();
+
+            document.getElementById("formNuevoEstudiante").reset();
+            mostrarNotificacion("Estudiante " + nombres + " " + apellidos + " registrado correctamente (201 Created).", false);
+        }
+
+        // ENDPOINT 4: Exportar reportes básicos en formato PDF
+        function descargarReportePdf() {
+            actualizarVistaPreviaPdf();
+            if (window.jspdf && window.jspdf.jsPDF) {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(14);
+                doc.setTextColor(15, 23, 42);
+                doc.text("REPORTE CONSOLIDADO DE ESTUDIANTES MATRICULADOS", 14, 18);
+
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(9.5);
+                doc.setTextColor(90, 90, 90);
+                const ahora = new Date().toLocaleString("es-CO");
+                doc.text("Sistema de Gestion Academica Escolar — API REST | Fecha: " + ahora, 14, 24);
+
+                const filas = baseDatosEstudiantes.map(e => [
+                    e.identificacion,
+                    e.nombres + " " + e.apellidos,
+                    e.grado,
+                    e.correo,
+                    Number(e.promedio).toFixed(1)
+                ]);
+
+                if (typeof doc.autoTable === "function") {
+                    doc.autoTable({
+                        startY: 30,
+                        head: [["Identificación", "Nombre Completo", "Grado", "Correo Institucional", "Promedio"]],
+                        body: filas,
+                        headStyles: { fillColor: [30, 27, 75], textColor: 255, fontStyle: "bold" },
+                        styles: { fontSize: 9, cellPadding: 3.2 }
+                    });
+                }
+
+                const suma = baseDatosEstudiantes.reduce((acc, item) => acc + Number(item.promedio || 0), 0);
+                const promGeneral = baseDatosEstudiantes.length ? (suma / baseDatosEstudiantes.length).toFixed(2) : "0.00";
+                const posY = (doc.lastAutoTable && doc.lastAutoTable.finalY) ? doc.lastAutoTable.finalY + 10 : 90;
+
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(10);
+                doc.setTextColor(30, 30, 30);
+                doc.text(
+                    "Total de estudiantes registrados: " + baseDatosEstudiantes.length +
+                    "   |   Promedio general institucional: " + promGeneral,
+                    14,
+                    posY
+                );
+
+                doc.save("reporte_estudiantes_colegio.pdf");
+                mostrarNotificacion("Reporte PDF exportado y descargado correctamente.", false);
+            } else {
+                cambiarVista("pdf");
+                mostrarNotificacion("Mostrando vista previa del reporte PDF.", false);
+            }
+        }
+
+        function renderizarTablaFrontend(lista) {
+            const tbody = document.getElementById("cuerpoTablaEstudiantes");
+            document.getElementById("badgeConteo").textContent = lista.length + " estudiante(s)";
+
+            if (lista.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-slate-400">
+                            No se encontraron registros para el criterio consultado.
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            tbody.innerHTML = lista.map(est => {
+                const nota = Number(est.promedio);
+                const badgeNota = nota >= 4.5
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    : nota >= 4.0
+                    ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                    : "bg-amber-50 text-amber-700 border-amber-200";
+                return `
+                <tr class="hover:bg-slate-50/90 transition">
+                    <td class="py-3 px-3.5 font-semibold mono text-slate-800">${est.identificacion}</td>
+                    <td class="py-3 px-3.5 font-semibold text-slate-900">${est.nombres} ${est.apellidos}</td>
+                    <td class="py-3 px-3.5">
+                        <span class="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold text-xs border border-slate-200">${est.grado}</span>
+                    </td>
+                    <td class="py-3 px-3.5 text-slate-600">${est.correo}</td>
+                    <td class="py-3 px-3.5 text-right">
+                        <span class="px-2.5 py-0.5 rounded-md font-bold text-xs border ${badgeNota}">${nota.toFixed(1)}</span>
+                    </td>
+                    <td class="py-3 px-3.5 text-center">
+                        <button onclick="ejecutarEndpointPorIdentificacion('${est.identificacion}')"
+                                class="px-2.5 py-1 rounded-lg border border-indigo-200 bg-indigo-50/50 text-indigo-700 hover:bg-indigo-600 hover:text-white text-xs mono font-semibold transition">
+                            _links.self
+                        </button>
+                    </td>
+                </tr>`;
+            }).join("");
+        }
+
+        function actualizarVistaPreviaPdf() {
+            const tbodyPdf = document.getElementById("tablaPreviewPdf");
+            document.getElementById("fechaReporteVista").textContent = "Emitido: " + new Date().toLocaleString("es-CO");
+
+            tbodyPdf.innerHTML = baseDatosEstudiantes.map(e => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-2.5 border border-slate-200 mono font-semibold">${e.identificacion}</td>
+                    <td class="p-2.5 border border-slate-200 font-medium">${e.nombres} ${e.apellidos}</td>
+                    <td class="p-2.5 border border-slate-200">${e.grado}</td>
+                    <td class="p-2.5 border border-slate-200 text-slate-600">${e.correo}</td>
+                    <td class="p-2.5 border border-slate-200 text-right font-bold">${Number(e.promedio).toFixed(1)}</td>
+                </tr>
+            `).join("");
+
+            const suma = baseDatosEstudiantes.reduce((acc, e) => acc + Number(e.promedio || 0), 0);
+            const prom = baseDatosEstudiantes.length ? (suma / baseDatosEstudiantes.length).toFixed(2) : "0.00";
+            document.getElementById("resumenTotalPdf").textContent =
+                "Total de estudiantes registrados: " + baseDatosEstudiantes.length;
+            document.getElementById("resumenPromedioPdf").textContent =
+                "Promedio general del colegio: " + prom;
+        }
+
+        function focarBusquedaId() {
+            cambiarVista("frontend");
+            const input = document.getElementById("inputBuscarIdentificacion");
+            input.value = "1036684210";
+            ejecutarEndpointPorIdentificacion("1036684210");
+            input.focus();
+        }
+
+        function cargarEjemploFormulario() {
+            cambiarVista("frontend");
+            const randomSufijo = Math.floor(100 + Math.random() * 899);
+            document.getElementById("campoIdentificacion").value = "1039582" + randomSufijo;
+            document.getElementById("campoNombres").value = "Santiago";
+            document.getElementById("campoApellidos").value = "Arboleda Cano";
+            document.getElementById("campoGrado").value = "11-B";
+            document.getElementById("campoPromedio").value = "4.5";
+            document.getElementById("campoCorreo").value = "santiago.arboleda@colegio.edu.co";
+            mostrarNotificacion("Formulario completado con datos de ejemplo. Haz clic en 'Registrar en Base de Datos (POST)'.", false);
+        }
+
+        function probarDesdeSwagger(accion) {
+            if (accion === "listar") {
+                ejecutarEndpointListar();
+                mostrarNotificacion("Ejecutado GET /api/estudiantes desde Swagger UI.", false);
+            } else if (accion === "porId") {
+                const id = document.getElementById("swaggerInputId").value.trim();
+                ejecutarEndpointPorIdentificacion(id);
+            }
+        }
+
+        function cambiarVista(nombreVista) {
+            const vistas = {
+                frontend: document.getElementById("vistaFrontend"),
+                swagger: document.getElementById("vistaSwagger"),
+                pdf: document.getElementById("vistaPdf"),
+                codigo: document.getElementById("vistaCodigo")
+            };
+            const botones = {
+                frontend: document.getElementById("tabBtnFrontend"),
+                swagger: document.getElementById("tabBtnSwagger"),
+                pdf: document.getElementById("tabBtnPdf"),
+                codigo: document.getElementById("tabBtnCodigo")
+            };
+
+            Object.keys(vistas).forEach(k => {
+                if (k === nombreVista) {
+                    vistas[k].classList.remove("hidden");
+                    botones[k].className = "px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-indigo-600 text-white shadow-sm transition";
+                } else {
+                    vistas[k].classList.add("hidden");
+                    botones[k].className = "px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800/70 transition";
+                }
+            });
+        }
+
+        function copiarTextoPortapapeles(texto, mensajeExito) {
+            const area = document.createElement("textarea");
+            area.value = texto;
+            document.body.appendChild(area);
+            area.select();
+            try {
+                document.execCommand("copy");
+                mostrarNotificacion(mensajeExito, false);
+            } catch (e) {
+                mostrarNotificacion("No se pudo copiar automáticamente.", true);
+            }
+            document.body.removeChild(area);
+        }
+
+        function copiarRespuestaJson() {
+            const contenido = document.getElementById("visorJsonHateoas").textContent;
+            copiarTextoPortapapeles(contenido, "Respuesta JSON HATEOAS copiada al portapapeles.");
+        }
+
+        function copiarCorreoProfesor() {
+            const texto = document.getElementById("textoCorreoProfesor").textContent;
+            copiarTextoPortapapeles(texto, "Plantilla de correo copiada al portapapeles.");
+        }
+
+        const archivosJavaJavadoc = {
+            controller: `package com.colegio.estudiantes.controller;
+
+import com.colegio.estudiantes.hateoas.EstudianteModelAssembler;
+import com.colegio.estudiantes.model.Estudiante;
+import com.colegio.estudiantes.service.EstudianteService;
+import com.colegio.estudiantes.service.ReportePdfService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
+
+/**
+ * Controlador REST principal que expone los cuatro endpoints del sistema escolar.
+ * Implementa respuestas con enlaces HATEOAS y anotaciones de OpenAPI/Swagger para su documentación.
+ *
+ * @version 1.0
+ */
+@RestController
+@RequestMapping("/api/estudiantes")
+@CrossOrigin(origins = "*")
+@Tag(name = "Estudiantes", description = "Endpoints REST con HATEOAS para consultar, registrar y exportar estudiantes")
+public class EstudianteController {
+
+    private final EstudianteService estudianteService;
+    private final ReportePdfService reportePdfService;
+    private final EstudianteModelAssembler assembler;
+
+    public EstudianteController(EstudianteService estudianteService,
+                                ReportePdfService reportePdfService,
+                                EstudianteModelAssembler assembler) {
+        this.estudianteService = estudianteService;
+        this.reportePdfService = reportePdfService;
+        this.assembler = assembler;
+    }
+
+    /**
+     * Endpoint 1: Consulta general de todos los estudiantes registrados en el colegio.
+     */
+    @GetMapping
+    @Operation(summary = "1. Consulta general de los estudiantes")
+    public ResponseEntity<CollectionModel<EntityModel<Estudiante>>> listarEstudiantes() {
+        List<EntityModel<Estudiante>> estudiantes = estudianteService.obtenerTodos().stream()
+                .map(assembler::toModel)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(CollectionModel.of(estudiantes,
+                linkTo(methodOn(EstudianteController.class).listarEstudiantes()).withSelfRel(),
+                linkTo(methodOn(EstudianteController.class).exportarReportePdf()).withRel("exportar-reporte-pdf")));
+    }
+
+    /**
+     * Endpoint 2: Consulta la información de un estudiante por su número de identificación.
+     */
+    @GetMapping("/{identificacion}")
+    @Operation(summary = "2. Consultar estudiante por número de identificación")
+    public ResponseEntity<?> obtenerPorIdentificacion(@PathVariable String identificacion) {
+        return estudianteService.buscarPorIdentificacion(identificacion)
+                .<ResponseEntity<?>>map(est -> ResponseEntity.ok(assembler.toModel(est)))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No existe un estudiante con la identificación: " + identificacion));
+    }
+
+    /**
+     * Endpoint 3: Ingresar nuevos estudiantes a la base de datos.
+     */
+    @PostMapping
+    @Operation(summary = "3. Ingresar nuevos estudiantes a la base de datos")
+    public ResponseEntity<?> registrarEstudiante(@Valid @RequestBody Estudiante estudiante) {
+        Estudiante guardado = estudianteService.guardarEstudiante(estudiante);
+        EntityModel<Estudiante> resource = assembler.toModel(guardado);
+        return ResponseEntity
+                .created(resource.getRequiredLink(IanaLinkRelations.SELF).toUri())
+                .body(resource);
+    }
+
+    /**
+     * Endpoint 4: Exportar reportes básicos en formato PDF.
+     */
+    @GetMapping(value = "/reporte/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "4. Exportar reportes básicos en formato PDF")
+    public ResponseEntity<byte[]> exportarReportePdf() {
+        byte[] pdfBytes = reportePdfService.generarReporteEstudiantes(estudianteService.obtenerTodos());
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", "reporte_estudiantes_colegio.pdf");
+        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+    }
+}`,
+            hateoas: `package com.colegio.estudiantes.hateoas;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+
+import com.colegio.estudiantes.controller.EstudianteController;
+import com.colegio.estudiantes.model.Estudiante;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.server.RepresentationModelAssembler;
+import org.springframework.stereotype.Component;
+
+/**
+ * Ensamblador encargado de aplicar el principio HATEOAS a las respuestas del API.
+ * Envuelve cada objeto Estudiante dentro de un EntityModel y le agrega los enlaces hipermedia.
+ *
+ * @version 1.0
+ */
+@Component
+public class EstudianteModelAssembler implements RepresentationModelAssembler<Estudiante, EntityModel<Estudiante>> {
+
+    @Override
+    public EntityModel<Estudiante> toModel(Estudiante estudiante) {
+        return EntityModel.of(estudiante,
+                linkTo(methodOn(EstudianteController.class)
+                        .obtenerPorIdentificacion(estudiante.getIdentificacion())).withSelfRel(),
+                linkTo(methodOn(EstudianteController.class)
+                        .listarEstudiantes()).withRel("estudiantes"),
+                linkTo(methodOn(EstudianteController.class)
+                        .exportarReportePdf()).withRel("reporte-pdf")
+        );
+    }
+}`,
+            service: `package com.colegio.estudiantes.service;
+
+import com.colegio.estudiantes.model.Estudiante;
+import com.colegio.estudiantes.repository.EstudianteRepository;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.stereotype.Service;
+
+/**
+ * Servicio que concentra la lógica de negocio para gestionar los estudiantes del colegio.
+ *
+ * @version 1.0
+ */
+@Service
+public class EstudianteService {
+
+    private final EstudianteRepository estudianteRepository;
+
+    public EstudianteService(EstudianteRepository estudianteRepository) {
+        this.estudianteRepository = estudianteRepository;
+    }
+
+    public List<Estudiante> obtenerTodos() {
+        return estudianteRepository.findAll();
+    }
+
+    public Optional<Estudiante> buscarPorIdentificacion(String identificacion) {
+        return estudianteRepository.findByIdentificacion(identificacion);
+    }
+
+    public Estudiante guardarEstudiante(Estudiante nuevoEstudiante) {
+        if (estudianteRepository.existsByIdentificacion(nuevoEstudiante.getIdentificacion())) {
+            throw new IllegalArgumentException("Ya existe un estudiante con esa identificación.");
+        }
+        if (nuevoEstudiante.getFechaMatricula() == null) {
+            nuevoEstudiante.setFechaMatricula(LocalDate.now());
+        }
+        return estudianteRepository.save(nuevoEstudiante);
+    }
+}`,
+            pdf: `package com.colegio.estudiantes.service;
+
+import com.colegio.estudiantes.model.Estudiante;
+import com.lowagie.text.*;
+import com.lowagie.text.pdf.*;
+import java.io.ByteArrayOutputStream;
+import java.util.List;
+import org.springframework.stereotype.Service;
+
+/**
+ * Servicio encargado de construir el reporte básico en formato PDF (Endpoint 4).
+ *
+ * @version 1.0
+ */
+@Service
+public class ReportePdfService {
+
+    public byte[] generarReporteEstudiantes(List<Estudiante> estudiantes) {
+        ByteArrayOutputStream salida = new ByteArrayOutputStream();
+        Document documento = new Document(PageSize.A4, 36, 36, 42, 42);
+        PdfWriter.getInstance(documento, salida);
+        documento.open();
+
+        documento.add(new Paragraph("REPORTE CONSOLIDADO DE ESTUDIANTES MATRICULADOS"));
+        PdfPTable tabla = new PdfPTable(5);
+        tabla.addCell("Identificación");
+        tabla.addCell("Nombre Completo");
+        tabla.addCell("Grado");
+        tabla.addCell("Correo");
+        tabla.addCell("Promedio");
+
+        for (Estudiante e : estudiantes) {
+            tabla.addCell(e.getIdentificacion());
+            tabla.addCell(e.getNombres() + " " + e.getApellidos());
+            tabla.addCell(e.getGrado());
+            tabla.addCell(e.getCorreo());
+            tabla.addCell(String.valueOf(e.getPromedio()));
+        }
+        documento.add(tabla);
+        documento.close();
+        return salida.toByteArray();
+    }
+}`,
+            entity: `package com.colegio.estudiantes.model;
+
+import jakarta.persistence.*;
+import java.time.LocalDate;
+
+/**
+ * Entidad JPA que representa a un estudiante matriculado en el colegio.
+ *
+ * @version 1.0
+ */
+@Entity
+@Table(name = "estudiantes")
+public class Estudiante {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true)
+    private String identificacion;
+    private String nombres;
+    private String apellidos;
+    private String grado;
+    private String correo;
+    private Double promedio;
+    private LocalDate fechaMatricula;
+}`
+        };
+
+        function mostrarArchivoCodigo(clave) {
+            document.getElementById("visorCodigoJava").textContent = archivosJavaJavadoc[clave] || "";
+        }
+
+        window.addEventListener("DOMContentLoaded", () => {
+            ejecutarEndpointListar();
+            mostrarArchivoCodigo("controller");
+        });
+    </script>
+</body>
+</html>
